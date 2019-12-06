@@ -37,7 +37,7 @@ For now using simple files to store values (.vm_*).
 # vm_default_private_net_ip=${vm_default_private_net_ip:="192.168.53.2"}
 
 # Usage example :
-vm_default_vm_memory=4096 vm_default_vm_cpus=4 ./.dev/init.sh
+vm_default_vm_memory=4096 vm_default_vm_cpus=4 ./.dev/setup.sh
 ```
 
 This will brings up a new VM and will install current Viky-Ai git HEAD.
