@@ -60,3 +60,9 @@ It will stage the process to save intermediate states so you can easily restart 
 ```bash
 ./.dev/restart.sh
 ```
+
+# Packaging VM
+```bash
+vagrant package default
+```
+
