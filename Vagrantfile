@@ -1,0 +1,81 @@
+# -*- mode: ruby -*-
+# vi: set ft=ruby :
+
+# French Exception <https://github.com/French-Exception>
+# Stéphane Erard <serard06@protonmail.com>
+# License AGPL
+
+def optimize_vm(v)
+    v.customize ["modifyvm", :id, "--cpuexecutioncap", 100]
+    v.customize ["modifyvm", :id, "--nicpromisc1", "allow-all"]
+    v.customize ["modifyvm", :id, "--nicpromisc2", "allow-all"]
+    v.customize ["modifyvm", :id, "--nicpromisc3", "allow-all"]
+    v.customize ["modifyvm", :id, "--nictype1", "virtio" ]
+    v.customize ["modifyvm", :id, "--nictype2", "virtio" ]
+    v.customize ["modifyvm", :id, "--nictype3", "virtio" ]
+    v.customize ["modifyvm", :id, "--natdnshostresolver1", "on"]
+    v.customize ["modifyvm", :id, "--natdnsproxy1", "on"]
+    v.customize ["modifyvm", :id, "--ioapic", "on"]
+    v.customize ["modifyvm", :id, "--hwvirtex", "on"]
+    v.customize ["modifyvm", :id, "--hpet", "on"]
+    v.customize ["modifyvm", :id, "--nestedpaging", "on"]
+    v.customize ["modifyvm", :id, "--largepages", "on"]
+    v.customize ["modifyvm", :id, "--vtxvpid", "on"]
+    v.customize ["modifyvm", :id, "--vtxux", "on"]
+    v.customize ["modifyvm", :id, "--pae", "on"]
+    v.customize ["modifyvm", :id, "--chipset", "ich9"]
+    v.customize ["modifyvm", :id, "--biosapic", "x2apic"]
+    v.customize ["modifyvm", :id, "--vrde", "off"]
+    v.customize ["modifyvm", :id, "--usb", "off"]
+    v.customize ["modifyvm", :id, "--ostype", "Debian_64"]
+    v.customize ["modifyvm", :id, "--vram", 8]
+end
+
+Vagrant.configure("2") do |config|
+
+  config.vagrant.plugins = {
+                          "vagrant-vbguest" => {"version" => "0.0.21"},
+                          "vagrant-reload" => {"version" => "0.0.1"},
+                          }
+
+  vms_config = {
+     "default" => {
+         "box"            => File.read('.vm_default_vm_box').to_s.strip!,
+         "ssh_port"       => File.read('.vm_default_ssh_port').to_s.strip!.to_i,
+         "private_net_ip" => File.read('.vm_default_private_net_ip').to_s.strip!,
+         "memory"         => File.read('.vm_default_vm_memory').to_s.strip!,
+         "cpus"           => File.read('.vm_default_vm_cpus').to_s.strip!.to_i,
+         "hostname"       => "default"
+     }
+  }
+
+  config.vm.define "default" do |vm|
+    if Vagrant.has_plugin?("vagrant-vbguest")
+      vm.vbguest.no_install = true
+      vm.vbguest.auto_update = false
+      vm.vbguest.allow_downgrade = true
+    end
+
+    vm.vm.hostname = vms_config["default"]["hostname"]
+    vm.vm.box = vms_config["default"]["box"]
+    vm.vm.box_check_update = false
+    config.vm.network :forwarded_port, guest: 22, host: vms_config["default"]["ssh_port"]
+    config.vm.network :private_network, ip: vms_config["default"]["private_net_ip"]
+    #config.vm.synced_folder "./", "/vagrant"
+
+    vm.vm.provider "virtualbox" do |vb|
+      # Display the VirtualBox GUI when booting the machine
+      vb.gui = false
+
+      # Customize the amount of memory on the VM:
+      vb.memory = vms_config["default"]["memory"]
+      vb.cpus = vms_config["default"]["cpus"]
+
+      optimize_vm(vb)
+    end
+
+    vm.vm.provision "system.dependencies", type: "shell", privileged: false, path: "./scripts/system.dependencies.sh"
+    vm.vm.provision :reload
+    vm.vm.provision "install", type: "shell", privileged: false,path: "./scripts/install.sh"
+  end
+end
